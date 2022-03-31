@@ -10,7 +10,10 @@
 #define FALSE 0
 #define TRUE 1
 
-typedef struct polynomial Polynomial;
+typedef struct polynomial {
+	int degree;
+	int *coefficients;
+} Polynomial;
 
 /* INTEGERS */
 
@@ -67,6 +70,16 @@ void print_polynomial(Polynomial *polynomial);
  *     the degree of the polynomial to be initialized
  */
 Polynomial *init_polynomial(int degree);
+
+/**
+ * Allocates memory for and returns a pointer to a new polynomial, which is a
+ * copy of the one passed as input.
+ *
+ * @param[in] poly
+ *     the polynomial to be copied
+ * @return    a pointer to a copy of poly
+ */
+Polynomial *copy_polynomial(Polynomial *poly);
 
 /**
  * Scans for the degree of a polynomial, then allocates memory for a new

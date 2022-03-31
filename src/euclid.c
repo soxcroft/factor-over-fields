@@ -8,16 +8,11 @@
 #include <stdio.h>
 #include "euclid.h"
 
-struct polynomial {
-	int degree;
-	int *coefficients;
-};
-
 /* --- function prototypes --------------------------------------------------*/
 
-int lc(Polynomial *p);
-int degree(Polynomial *p);
-int is_zero(Polynomial *p);
+static int lc(Polynomial *p);
+static int degree(Polynomial *p);
+static int is_zero(Polynomial *p);
 
 /* --- euclid interface -----------------------------------------------------*/
 
@@ -72,6 +67,17 @@ Polynomial *init_polynomial(int degree)
 		p->coefficients[i] = 0;
 	}
 	return p;
+}
+
+Polynomial *copy_polynomial(Polynomial *poly)
+{
+	Polynomial *new_poly = malloc(sizeof(Polynomial));
+	new_poly->degree = poly->degree;
+	new_poly->coefficients = malloc(sizeof(int) * (new_poly->degree + 1));
+	for (int i = 0; i <= poly->degree; i++) {
+		new_poly->coefficients[i] = poly->coefficients[i];
+	}
+	return new_poly;
 }
 
 Polynomial *scan_polynomial()
