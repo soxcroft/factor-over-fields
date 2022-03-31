@@ -24,14 +24,15 @@ LOCALBIN = ~/.local/bin
 
 # executables
 
-testberlekamp: testberlekamp.c berlekamp.o | $(BINDIR)
+testberlekamp: testberlekamp.c euclid.o berlekamp.o | $(BINDIR)
 	$(COMPILE) -o $(BINDIR)/$@ $^
 
 testeuclid: testeuclid.c euclid.o | $(BINDIR)
 	$(COMPILE) -o $(BINDIR)/$@ $^
 
 # units
-berlekamp.o: berlekamp.c berlekamp.h
+
+berlekamp.o: berlekamp.c euclid.h berlekamp.h
 	$(COMPILE) -c $<
 
 euclid.o: euclid.c euclid.h

@@ -6,71 +6,46 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "euclid.h"
 #include "berlekamp.h"
 
-/* TODO put these in euclid.c (change yuns.c, organise methods in terms of
- * polynomials and integers) */
+/* --- function prototypes ---------------------------------------------------*/
 
-/* Mod, like % but always returns positive values */
-int mod(int a, int p)
+int is_constant(Polynomial *p);
+
+/* --- berlekamp interface ---------------------------------------------------*/
+
+int **get_berlekamp_matrix(Polynomial *p, int m)
 {
-	return (a % p + p) % p;
-}
-
-/* From yuns.c */
-void extended_gcd(int *s, int *t, int a, int m)
-{
-	int s0 = 1, s1 = 0;
-	int t0 = 0, t1 = 1;
-	int r0 = a, r1 = m;
-	int q, helper;
-
-	while (r1 != 0) {
-		q = r0 / r1;
-		helper = s0 - q*s1;
-		s0 = s1;
-		s1 = helper;
-		helper = t0 - q*t1;
-		t0 = t1;
-		t1 = helper;
-		helper = r0 - q*r1;
-		r0 = r1;
-		r1 = helper;
-	}
-
-	*s = s0;
-	*t = t0;
-}
-
-/* I/O METHODS */
-
-void scan_matrix(int ***arr, int m, int n)
-{
-	/* initialize matrix */
-	*arr = malloc(sizeof(int *) * m);
-	for (int i = 0; i < m; i++) {
-		(*arr)[i] = malloc(sizeof(int) * n);
-	}
-
-	/* scan for values */
-	for (int i = 0; i < m; i++) {
-		for (int j = 0; j < n; j++) {
-			scanf("%d", (*arr)[i] + j);
+	/* initialize helper polynomial and matrix */
+	int degree = p->degree;
+	Polynomial *helper = init_polynomial(m * degree);
+	int **matrix;
+	matrix = malloc(sizeof(int *) * degree);
+	for (int i = 0; i < degree; i++) {
+		matrix[i] = malloc(sizeof(int) * degree);
+		for (int j = 0; j < degree; j++) {
+			matrix[i][j] = 0;
 		}
 	}
-}
 
-void print_matrix(int **arr, int m, int n)
-{
-	for (int i = 0; i < m; i++) {
-		for (int j = 0; j < n - 1; j++) {
-			printf("%d ", arr[i][j]);
+	/* compute powers x^(2i) mod p */
+	Polynomial *q, *r; /* quotient and remainder */
+	for (int i = 0; i < degree; i++) {
+		if (i != 0) {
+			helper->coefficients[m*(i - 1)] = 0;
 		}
-		printf("%d\n", arr[i][n-1]);
-	}
-}
+		helper->coefficients[m*i] = 1;
 
-/* LINEAR ALGEBRA */
+		long_div(&q, &r, helper, p, m);
+		matrix[i] = r->coefficients;
+
+		free_polynomial(q);
+		free(r);
+	}
+
+	return matrix;
+}
 
 void transpose(int ***A, int m, int n)
 {
@@ -138,7 +113,7 @@ void gauss_jordan(int **A, int m, int n, int p)
 		}
 
 		/* Multiply row r by inverse of A[r][lead] */
-		extended_gcd(&s, &t, p, A[r][lead]);
+		extended_gcd_z(&s, &t, p, A[r][lead]);
 		for (i = lead; i < n; i++) {
 			A[r][i] = mod(A[r][i] * t, p);
 		}
@@ -209,5 +184,115 @@ int **null_space(int *rank, int **R, int m, int n, int p)
 	}
 
 	return kernel;
+}
+
+Polynomial **kernel_to_arr(int **kernel, int m, int n)
+{
+	Polynomial **arr = malloc(sizeof(Polynomial *) * m);
+	for (int i = 0; i < m; i++) {
+		arr[i] = malloc(sizeof(Polynomial));
+		arr[i]->degree = n;
+		arr[i]->coefficients = kernel[i];
+	}
+	return arr;
+}
+
+Polynomial **factors(Polynomial *p, Polynomial **subalgebra, int nullity, int m)
+{
+	/* p has nullity distinct factors */
+	Polynomial **facs = malloc(sizeof(Polynomial *) * nullity);
+	int counter = 0;
+
+	/* Find index of a non trivial polynomial in the subalgebra */
+	int ip = -1; /* XXX change back to -1 */
+	for (int i = 0; i < nullity && ip == -1; i++) {
+		if (!is_constant(subalgebra[i])) {
+			ip = i;
+		}
+	}
+
+	/* NULL indicates there are no non-trivial factors */
+	if (ip == -1) {
+		return NULL;
+	}
+
+	/* f(x) = product[s in F_q](gcd(p, g(x)-s), where F_q is field */
+	Polynomial *factor;
+	for (int s = 0; s < nullity; s++) {
+		subalgebra[ip]->coefficients[0] -= s;
+		factor = gcd_p(p, subalgebra[ip], m);
+		subalgebra[ip]->coefficients[0] += s;
+		facs[counter] = factor;
+		counter++;
+	}
+
+	/* Return what we found and worry about discarding/reducing factors later */
+	return facs;
+}
+
+Polynomial **berlekamp(int *num_factors, Polynomial *poly, int m)
+{
+	/* Get Berlekamp subalgebra */
+	int **matrix = get_berlekamp_matrix(poly, m);
+	subtract_identity(matrix, poly->degree, poly->degree, m);
+	transpose(&matrix, poly->degree, poly->degree);
+	gauss_jordan(matrix, poly->degree, poly->degree, m);
+
+	int **kernel, rank;
+	kernel = null_space(&rank, matrix, poly->degree, poly->degree, m);
+
+	*num_factors = poly->degree - rank;
+	/* TODO if num factors is 0 return NULL? 1 return itself? */
+	if (*num_factors == 0 || *num_factors == 1) {
+		*num_factors = 1;
+		Polynomial **facs = malloc(sizeof(Polynomial *));
+		*facs = copy_polynomial(poly);
+		return facs;
+	}
+
+	Polynomial **subalgebra = kernel_to_arr(kernel, poly->degree - rank, poly->degree);
+
+	/* Now, find factors of poly and recursively call berlekamp on them until we
+	 * are left with irreducible polynomial factors */
+	Polynomial **check = factors(poly, subalgebra, poly->degree - rank, m);
+	if (!check) {
+		/* No non-trivial factors */
+		/* TODO not sure if this will ever be executed */
+		*num_factors = 1;
+		Polynomial **facs = malloc(sizeof(Polynomial *));
+		*facs = copy_polynomial(poly);
+		return facs;
+	}
+
+	Polynomial **facs = malloc(sizeof(Polynomial *) * (poly->degree - rank));
+	Polynomial **reduced_facs; /* use to store factors of factors */
+	int counter, helper;
+	counter = 0;
+
+	/* iterate over factors, discard trivial ones, reduce reducible ones */
+	for (int i = 0; i < poly->degree - rank; i++) {
+		if (!is_constant(check[i])) {
+			reduced_facs = berlekamp(&helper, check[i], m);
+			for (int j = 0; j < helper; j++) {
+				facs[counter++] = reduced_facs[j];
+			}
+		}
+	}
+
+	return facs;
+}
+
+/* --- utility functions -----------------------------------------------------*/
+
+/** Return true if polynomial is a constant */
+int is_constant(Polynomial *p)
+{
+	int trivial = TRUE;
+	for (int i = 1; i <= p->degree; i++) {
+		if (p->coefficients[i] != 0) {
+			trivial = FALSE;
+		}
+	}
+	return trivial;
 }
 
