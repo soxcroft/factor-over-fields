@@ -15,7 +15,7 @@ COMPILE  = $(CC) $(CFLAGS) $(DFLAGS)
 INSTALL  = install
 
 # files TODO add euclid
-EXES = testberlekamp
+EXES = testberlekamp testeuclid
 
 BINDIR = ../bin
 LOCALBIN = ~/.local/bin
@@ -27,8 +27,14 @@ LOCALBIN = ~/.local/bin
 testberlekamp: testberlekamp.c berlekamp.o | $(BINDIR)
 	$(COMPILE) -o $(BINDIR)/$@ $^
 
+testeuclid: testeuclid.c euclid.o | $(BINDIR)
+	$(COMPILE) -o $(BINDIR)/$@ $^
+
 # units
 berlekamp.o: berlekamp.c berlekamp.h
+	$(COMPILE) -c $<
+
+euclid.o: euclid.c euclid.h
 	$(COMPILE) -c $<
 
 # PHONY TARGETS
