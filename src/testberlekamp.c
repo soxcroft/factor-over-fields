@@ -66,14 +66,27 @@ int main()
 		}
 	}
 
+	/* Free factors, as we reuse it now to do the same process wrapped in
+	 * berlekamp */
+	if (facs) {
+		free_factors(facs, m - rank);
+	}
+
 	int num_factors;
 	facs = berlekamp(&num_factors, polynomial, p);
-	/* TODO doesn't always create enough factors... */
+	/* FIXME doesn't always create enough factors... */
 	printf("Berlekamp, %d factors\n", num_factors);
 	for (int i = 0; i < num_factors; i++) {
 		print_polynomial(facs[i]);
 		printf("\n");
 	}
+
+	/* Free allocated memory */
+	free_polynomial(polynomial);
+	free_matrix(matrix, m);
+	free_matrix(kernel, m - rank);
+	free_factors(subalgebra, m - rank);
+	free_factors(facs, num_factors);
 
 	return EXIT_SUCCESS;
 }

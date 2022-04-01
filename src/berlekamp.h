@@ -112,6 +112,28 @@ Polynomial **kernel_to_arr(int **kernel, int m, int n);
 Polynomial **factors(Polynomial *p, Polynomial **subalgebra, int nullity, int m);
 
 /**
+ * Frees memory allocated to an array of pointers to polynomials.
+ *
+ * @param[in] factors
+ *     array of pointers to polynomials
+ * @param[in] nullity
+ *     the number of pointers in the array
+ */
+void free_factors(Polynomial **factors, int nullity);
+
+/**
+ * Frees memory allocated to a matrix with m rows and n columns.
+ *
+ * @param[in] matrix
+ *     the matrix of integers to be freed
+ * @param[in] m
+ *     the number of rows in the matrix
+ * @param[in] n
+ *     the number of columns in the matrix
+ */
+void free_matrix(int **matrix, int m);
+
+/**
  * Berlekamp's algorithm. Takes in a polynomial defined over Z_m as input, finds
  * its square free factorization, and returns an array of its factors.
  *

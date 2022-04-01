@@ -59,6 +59,8 @@ int hensel(int *power, Polynomial *f, int root, int p, int k)
 	/* Store p^k */
 	*power = m;
 
+	free_polynomial(f_prime);
+
 	return new_root;
 }
 

@@ -72,5 +72,11 @@ int main()
 		printf("f(%d) = 0 mod %d\n", x, helper);
 	}
 
+	/* Free allocated memory */
+	free_polynomial(f);
+	free(remainders);
+	free(divisors);
+	free(exponents);
+
 	return EXIT_SUCCESS;
 }

@@ -22,12 +22,6 @@ int **get_berlekamp_matrix(Polynomial *p, int m)
 	Polynomial *helper = init_polynomial(m * degree);
 	int **matrix;
 	matrix = malloc(sizeof(int *) * degree);
-	for (int i = 0; i < degree; i++) {
-		matrix[i] = malloc(sizeof(int) * degree);
-		for (int j = 0; j < degree; j++) {
-			matrix[i][j] = 0;
-		}
-	}
 
 	/* compute powers x^(2i) mod p */
 	Polynomial *q, *r; /* quotient and remainder */
@@ -43,6 +37,8 @@ int **get_berlekamp_matrix(Polynomial *p, int m)
 		free_polynomial(q);
 		free(r);
 	}
+
+	free_polynomial(helper);
 
 	return matrix;
 }
@@ -63,10 +59,8 @@ void transpose(int ***A, int m, int n)
 	}
 
 	/* free old matrix and assign B to *A */
-	for (int i = 0; i < m; i++) {
-		free((*A)[i]);
-	}
-	free(*A);
+	free_matrix(*A, m);
+
 	*A = B;
 }
 
@@ -173,7 +167,7 @@ int **null_space(int *rank, int **R, int m, int n, int p)
 		} else {
 			/* Free variable */
 			for (int i = 0; i < m; i++) {
-				if (row >= 0 && pivot[row] != -1) {
+				if (row >= 0 && pivot[i] != -1) {
 					kernel[free_variables][pivot[i]] = mod(-R[i][col], p);
 				}
 			}
@@ -183,6 +177,8 @@ int **null_space(int *rank, int **R, int m, int n, int p)
 		}
 	}
 
+	free(pivot);
+
 	return kernel;
 }
 
@@ -191,8 +187,11 @@ Polynomial **kernel_to_arr(int **kernel, int m, int n)
 	Polynomial **arr = malloc(sizeof(Polynomial *) * m);
 	for (int i = 0; i < m; i++) {
 		arr[i] = malloc(sizeof(Polynomial));
-		arr[i]->degree = n;
-		arr[i]->coefficients = kernel[i];
+		arr[i]->degree = n - 1;
+		arr[i]->coefficients = malloc(sizeof(int) * n);
+		for (int j = 0; j < n; j++) {
+			arr[i]->coefficients[j] = kernel[i][j];
+		}
 	}
 	return arr;
 }
@@ -213,6 +212,7 @@ Polynomial **factors(Polynomial *p, Polynomial **subalgebra, int nullity, int m)
 
 	/* NULL indicates there are no non-trivial factors */
 	if (ip == -1) {
+		free(facs);
 		return NULL;
 	}
 
@@ -230,6 +230,24 @@ Polynomial **factors(Polynomial *p, Polynomial **subalgebra, int nullity, int m)
 	return facs;
 }
 
+void free_factors(Polynomial **factors, int nullity)
+{
+	for (int i = 0; i < nullity; i++) {
+		free_polynomial(factors[i]);
+	}
+	free(factors);
+}
+
+void free_matrix(int **matrix, int m)
+{
+	for (int i = 0; i < m; i++) {
+		free(matrix[i]);
+	}
+	if (matrix) {
+		free(matrix);
+	}
+}
+
 Polynomial **berlekamp(int *num_factors, Polynomial *poly, int m)
 {
 	/* Get Berlekamp subalgebra */
@@ -242,8 +260,12 @@ Polynomial **berlekamp(int *num_factors, Polynomial *poly, int m)
 	kernel = null_space(&rank, matrix, poly->degree, poly->degree, m);
 
 	*num_factors = poly->degree - rank;
-	/* TODO if num factors is 0 return NULL? 1 return itself? */
+
 	if (*num_factors == 0 || *num_factors == 1) {
+		/* free memory allocated so far */
+		free_matrix(matrix, poly->degree);
+		free_matrix(kernel, *num_factors);
+		/* polynomial is irreducible */
 		*num_factors = 1;
 		Polynomial **facs = malloc(sizeof(Polynomial *));
 		*facs = copy_polynomial(poly);
@@ -276,8 +298,19 @@ Polynomial **berlekamp(int *num_factors, Polynomial *poly, int m)
 			for (int j = 0; j < helper; j++) {
 				facs[counter++] = reduced_facs[j];
 			}
+			free(reduced_facs);
 		}
 	}
+
+	/* FIXME num_factors should already be correct ...  this is just to try fix
+	 * poly6 */
+	*num_factors = counter;
+
+	/* Free allocated memory */
+	free_matrix(matrix, poly->degree);
+	free_matrix(kernel, poly->degree - rank);
+	free_factors(subalgebra, poly->degree - rank);
+	free_factors(check, poly->degree - rank);
 
 	return facs;
 }
@@ -295,4 +328,3 @@ int is_constant(Polynomial *p)
 	}
 	return trivial;
 }
-
