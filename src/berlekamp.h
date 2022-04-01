@@ -119,7 +119,7 @@ Polynomial **factors(Polynomial *p, Polynomial **subalgebra, int nullity, int m)
  * @param[in] nullity
  *     the number of pointers in the array
  */
-void free_factors(Polynomial **factors, int nullity);
+void free_polynomials(Polynomial **polynomials, int nullity);
 
 /**
  * Frees memory allocated to a matrix with m rows and n columns.

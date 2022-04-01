@@ -230,12 +230,12 @@ Polynomial **factors(Polynomial *p, Polynomial **subalgebra, int nullity, int m)
 	return facs;
 }
 
-void free_factors(Polynomial **factors, int nullity)
+void free_polynomials(Polynomial **polynomials, int nullity)
 {
 	for (int i = 0; i < nullity; i++) {
-		free_polynomial(factors[i]);
+		free_polynomial(polynomials[i]);
 	}
-	free(factors);
+	free(polynomials);
 }
 
 void free_matrix(int **matrix, int m)
@@ -309,8 +309,8 @@ Polynomial **berlekamp(int *num_factors, Polynomial *poly, int m)
 	/* Free allocated memory */
 	free_matrix(matrix, poly->degree);
 	free_matrix(kernel, poly->degree - rank);
-	free_factors(subalgebra, poly->degree - rank);
-	free_factors(check, poly->degree - rank);
+	free_polynomials(subalgebra, poly->degree - rank);
+	free_polynomials(check, poly->degree - rank);
 
 	return facs;
 }

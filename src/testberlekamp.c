@@ -69,7 +69,7 @@ int main()
 	/* Free factors, as we reuse it now to do the same process wrapped in
 	 * berlekamp */
 	if (facs) {
-		free_factors(facs, m - rank);
+		free_polynomials(facs, m - rank);
 	}
 
 	int num_factors;
@@ -85,8 +85,8 @@ int main()
 	free_polynomial(polynomial);
 	free_matrix(matrix, m);
 	free_matrix(kernel, m - rank);
-	free_factors(subalgebra, m - rank);
-	free_factors(facs, num_factors);
+	free_polynomials(subalgebra, m - rank);
+	free_polynomials(facs, num_factors);
 
 	return EXIT_SUCCESS;
 }
