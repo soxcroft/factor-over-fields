@@ -15,7 +15,7 @@ COMPILE  = $(CC) $(CFLAGS) $(DFLAGS)
 INSTALL  = install
 
 # files TODO add euclid
-EXES = testberlekamp testeuclid
+EXES = testberlekamp testeuclid testlift
 
 BINDIR = ../bin
 LOCALBIN = ~/.local/bin
@@ -23,6 +23,9 @@ LOCALBIN = ~/.local/bin
 # RULES
 
 # executables
+
+testlift: testlift.c lift.o euclid.o | $(BINDIR)
+	$(COMPILE) -o $(BINDIR)/$@ $^
 
 testberlekamp: testberlekamp.c euclid.o berlekamp.o | $(BINDIR)
 	$(COMPILE) -o $(BINDIR)/$@ $^
@@ -32,7 +35,10 @@ testeuclid: testeuclid.c euclid.o | $(BINDIR)
 
 # units
 
-berlekamp.o: berlekamp.c euclid.h berlekamp.h
+lift.o: lift.c euclid.h lift.h
+	$(COMPILE) -c $<
+
+berlekamp.o: berlekamp.c berlekamp.h euclid.h
 	$(COMPILE) -c $<
 
 euclid.o: euclid.c euclid.h
