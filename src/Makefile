@@ -14,8 +14,8 @@ RM       = rm -f
 COMPILE  = $(CC) $(CFLAGS) $(DFLAGS)
 INSTALL  = install
 
-# files TODO add euclid
-EXES = testberlekamp testeuclid testlift
+# files
+EXES = factor testberlekamp testeuclid testlift
 
 BINDIR = ../bin
 LOCALBIN = ~/.local/bin
@@ -23,6 +23,9 @@ LOCALBIN = ~/.local/bin
 # RULES
 
 # executables
+
+factor: factor.c euclid.o berlekamp.o lift.o | $(BINDIR)
+	$(COMPILE) -o $(BINDIR)/$@ $^
 
 testlift: testlift.c lift.o euclid.o | $(BINDIR)
 	$(COMPILE) -o $(BINDIR)/$@ $^
@@ -46,7 +49,7 @@ euclid.o: euclid.c euclid.h
 
 # PHONY TARGETS
 
-# all: TODO
+all: factor
 
 clean:
 	$(RM) $(foreach EXEFILE, $(EXES), $(BINDIR)/$(EXEFILE))

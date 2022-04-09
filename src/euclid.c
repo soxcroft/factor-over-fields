@@ -116,6 +116,10 @@ void print_polynomial(Polynomial *polynomial)
 			}
 		}
 	}
+
+	if (!printed_first_term) {
+		printf("0");
+	}
 }
 
 Polynomial *get_formal_derivative(Polynomial *p, int m)
